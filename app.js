@@ -42,6 +42,15 @@ return {
     data.items.push(newItem);
     return newItem;
   },
+  getItemByID:function(id){
+    let foundItem = null;
+    data.items.forEach(function(item){
+      if(item.id === id){
+        foundItem = item;
+      }
+    });
+    return foundItem;
+  },
   getTotalCalories: function(){
     let totalCals = 0;
     data.items.forEach(function(item){
@@ -50,6 +59,12 @@ return {
     });
     data.totalCalories = totalCals;
     return data.totalCalories;
+  },
+  setCurrentItem:function(itemToEdit){
+    data.currentItem = itemToEdit;
+  },
+  getCurrentItem: function(){
+    return data.currentItem;
   },
   logData:function(){
     return data;
@@ -66,7 +81,10 @@ UISelectors = {
   addBtn: '.add-btn',
   name: '#item-name',
   calories: '#item-calories',
-  totalCalories:'.total-calories'
+  totalCalories:'.total-calories',
+  updateBtn:'.update-btn',
+  deleteBtn:'.delete-btn',
+  backBtn:'.back-btn'
 }
   // public methods
   return {
@@ -110,11 +128,24 @@ UISelectors = {
       document.querySelector(UISelectors.name).value = ''
       document.querySelector(UISelectors.calories).value = ''
     },
+    addItemtoForm:function(){
+      document.querySelector(UISelectors.name).value = itemCtrl.getCurrentItem().name;
+      document.querySelector(UISelectors.calories).value = itemCtrl.getCurrentItem().calories;
+
+    },
     hideList: function(){
       document.querySelector(UISelectors.itemList).style.display = 'none';
     },
     showTotalCalories: function(totalCalories){
-      document.querySelector(UISelectors.totalCalories).innerHTML = totalCalories;
+      document.querySelector(UISelectors.totalCalories).textContent = totalCalories;
+    },
+    clearEditState: function(){
+      UICtrl.clearInputFields();
+      document.querySelector(UISelectors.updateBtn).style.display = 'none';
+      document.querySelector(UISelectors.backBtn).style.display = 'none';
+      document.querySelector(UISelectors.deleteBtn).style.display = 'none';
+      document.querySelector(UISelectors.addBtn).style.display = 'inline';
+
     },
     getSelectors:function(){
       return UISelectors;
@@ -134,8 +165,11 @@ const AppCtrl = (function(itemCtrl,UICtrl){
 
     // add item event from UI
     document.querySelector(UISelectors.addBtn).addEventListener('click',itemAdded);
-  }
-  
+
+    // Edit icon click event handler
+    document.querySelector(UISelectors.itemList).addEventListener('click', itemUpdateSubmit);
+    };
+
   const itemAdded = function(e){
 
     // get item input from form (UI controller)
@@ -152,18 +186,41 @@ const AppCtrl = (function(itemCtrl,UICtrl){
     const totalCalories = itemCtrl.getTotalCalories();
 
       // add Total Calories to UI
-     UICtrl.showTotalCalories(totalCalories);
+    UICtrl.showTotalCalories(totalCalories);
 
     UICtrl.clearInputFields();
-    };
+    }
 
     e.preventDefault;
-  }
+  };
+
+   
+  const itemUpdateSubmit = function(e){
+    if(e.target.classList.contains('edit-item')){
+    //  get list item id
+    const listID = e.target.parentNode.parentNode.id;
+    const listIdArr = listID.split('-');
+    const id = parseInt(listIdArr[1]);
+    
+    // get item by ID
+    const itemToEdit = itemCtrl.getItemByID(id);
+      console.log(itemToEdit);
+      // set editing item to currentItem
+      UICtrl.setCurrentItem(itemToEdit);
+   }
+    UICtrl.addItemtoForm();
+
+    e.preventDefault;
+  };
+
    // public methods
   return{
     init:function(){
+      // clear Edit State
+      UICtrl.clearEditState();
       // fetch items from data structure
       const items = itemCtrl.getItems();
+
     // check if items are there if not remove styling
       if(items.length === 0){
         UICtrl.hideList();
@@ -171,7 +228,14 @@ const AppCtrl = (function(itemCtrl,UICtrl){
         // populate list with items
         UICtrl.populateItems(items);
       }
-      loadEventListeners();
+
+   // Get total calories
+    const totalCalories = itemCtrl.getTotalCalories();
+
+    // add Total Calories to UI
+    UICtrl.showTotalCalories(totalCalories);
+
+    loadEventListeners();
 
     },
   }
